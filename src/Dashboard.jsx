@@ -5,11 +5,11 @@ import Footer from "./components/Footer";
 
 function Dashboard() {
   return (
-    <>
+    <div className='w-full'>
       <Header />
       <Outlet />
       <Footer />
-    </>
+    </div>
   )
 }
 
