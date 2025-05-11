@@ -13,10 +13,9 @@ const navigate = useNavigate()
 useEffect(() => {
     async function fetchMovie() {
         try {     
-            const nowPlaying = await movieList();
-            console.log('movies: ', nowPlaying)
-            if (!nowPlaying) throw new Error ("Data is missing")
-            setMovies(nowPlaying.data);
+            const movies = await movieList();
+            if (!movies) throw new Error ("Data is missing")
+            setMovies(movies.data);
         }
         catch (error) {
             console.error(error.message)
