@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { getGenre, movieList } from '../../api/movieList'
+import { movieList, VITE_API_URL } from '../../api/movieList'
 
 import Search from '../../assets/Search.png'
 import ArrowBlue from '../../assets/right-blue.png'
@@ -8,19 +8,15 @@ import ArrowWhite from '../../assets/right-white.png'
 
 function MovieList() {
 const [movies, setMovies] = useState([])
-const [genreList, setGenreList] = useState({})
 const navigate = useNavigate()
 
 useEffect(() => {
     async function fetchMovie() {
-        try {
-            const genres = await getGenre();
-            if(!genres) throw new Error ("Data is missing");
-            setGenreList(genres);
-      
+        try {     
             const nowPlaying = await movieList();
+            console.log('movies: ', nowPlaying)
             if (!nowPlaying) throw new Error ("Data is missing")
-            setMovies(nowPlaying);
+            setMovies(nowPlaying.data);
         }
         catch (error) {
             console.error(error.message)
@@ -56,11 +52,11 @@ useEffect(() => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {movies.map((movie) => (
                 <div key={movie.id} className="container-viewall relative">
-                    <img className='w-full h-full object-cover rounded-lg' src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title}/>
+                    <img className='w-full h-full object-cover rounded-lg' src={`${VITE_API_URL}/public/${movie.poster}`} alt={movie.title}/>
                     <p className="movie-title">{movie.title}</p>
                     <div className="flex flex-row text-xs">
-                        {movie.genre_ids.slice(0, 2).map((id) => (
-                            <p key={id} className='movie-genre'> {genreList[id] || "Unknown"} </p>
+                        {movie.genre.split(', ').map((genre_name, genre_id) => (
+                            <p key={genre_id} className='movie-genre'>{genre_name}</p>
                         ))}
                     </div>
                     <div className="detail-hover h-[265px]">

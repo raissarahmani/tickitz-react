@@ -1,31 +1,17 @@
-const API_KEY = import.meta.env.VITE_API_KEY
-const BASE_URL = import.meta.env.VITE_BASE_URL
-
-export async function getGenre () {
-    try {
-        const response = await fetch (`${BASE_URL}/genre/movie/list?api_key=${API_KEY}`)
-        if (!response.ok) throw new Error("Failed fetch genre")
-
-        const dataGenre = await response.json()
-        if (!dataGenre.genres) throw new Error("No genres found")
-        return dataGenre.genres.reduce((acc, genre) => {
-            acc[genre.id] = genre.name
-            return acc
-        }, {})
-    } catch (error) {
-        console.error(error.message)
-        return []
-    }
-}
+ export const VITE_API_URL = import.meta.env.VITE_API_URL
 
 export async function movieList () {
     try {
-        const response = await fetch(`${BASE_URL}/movie/now_playing?api_key=${API_KEY}&page=1`)
+        const response = await fetch(`${VITE_API_URL}/movies`, {
+          method: "GET",
+          headers: {"Content-Type": "application/json"},
+        })
         if (!response.ok) throw new Error("Failed fetch movie list")
 
         const dataMovie = await response.json()
         if (!dataMovie) throw new Error ("No movie found")
-        return (dataMovie.results.slice(0,12))
+          
+        return dataMovie
     } 
     catch (error) {
         console.error (error.message)
@@ -34,7 +20,7 @@ export async function movieList () {
 
 export async function getDetail (id) {
   try {
-    const response = await fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}`)
+    const response = await fetch(`${VITE_API_URL}/movies/${id}`)
     if (!response.ok) throw new Error("Failed fetch detail movie")
     return response.json()
   }
@@ -43,13 +29,17 @@ export async function getDetail (id) {
   }
 }
 
-export async function getCredits (id) {
+export async function upcomingList () {
   try {
-    const response = await fetch(`${BASE_URL}/movie/${id}/credits?api_key=${API_KEY}`)
-    if (!response.ok) throw new Error("Failed fetch credits movie")
-    return response.json()
+      const response = await fetch(`${VITE_API_URL}/movies/upcoming`)
+      if (!response.ok) throw new Error ("Failed fetch movie")
+
+      const dataUpcoming = await response.json()
+      if(!dataUpcoming) throw new Error ("No movie found")
+
+      return dataUpcoming
   }
   catch (error) {
-    console.error (error.message)
+      console.error(error.message)
   }
 }

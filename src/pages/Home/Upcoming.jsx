@@ -1,23 +1,19 @@
 import { useState, useEffect } from 'react'
-import { getGenre, upcomingList } from '../../api/upcoming'
+import { upcomingList, VITE_API_URL } from '../../api/movieList'
 
 import ArrowLeft from '../../assets/left-white.png'
 import ArrowRight from '../../assets/right-white.png'
 
 function Upcoming() {
 const [movie, setMovie] = useState([])
-const [genreList, setGenreList] = useState({})
 
 useEffect(() => {
     async function fetchUpcoming () {
-        try {
-            const genres = await getGenre()
-            if(!genres) throw new Error ("Data is missing")
-            setGenreList(genres)
-    
+        try {  
             const upcomingMovie = await upcomingList()
+            // console.log('upcomingMovie:', upcomingMovie)
             if (!upcomingMovie) throw new Error ("Data is missing")
-            setMovie(upcomingMovie)
+            setMovie(upcomingMovie.data)
         }
         catch (error) {
             console.error(error.message)
@@ -44,19 +40,19 @@ useEffect(() => {
             <div className="grid grid-flow-col gap-[1vw] w-max">
                 {movie.map((movie) => (
                 <div key={movie.id} className="container-movie">
-                    <img className='movie' src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
+                    <img className='movie' src={`${VITE_API_URL}/public/${movie.poster}`} alt={movie.title} />
                     <div className='w-full overflow-hidden'>
                         <p className="movie-title text-lg md:text-2xl">{movie.title}</p>
                     </div>
                     <p className="text-sm md:font-subtitle text-[#1D4ED8] mb-[2vh]">
-                    {new Date(movie.release_date).toLocaleDateString("en-US", {
+                    {new Date(movie.release).toLocaleDateString("en-US", {
                         month: "long",
                         year: "numeric",
                         })}
                     </p>
                     <div className="flex flex-row text-xs">
-                        {movie.genre_ids.slice(0,2).map((id) => (
-                            <p key={id} className='movie-genre'>{genreList[id] || "unknown"}</p>
+                        {movie.genre.split(', ').map((genre_name, genre_id) => (
+                            <p key={genre_id} className='movie-genre'>{genre_name}</p>
                         ))}
                     </div>
                 </div>
