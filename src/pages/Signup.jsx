@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router'
-import { useDispatch } from 'react-redux'
-import { register } from '../redux/slices/authSlice'
+// import { useDispatch } from 'react-redux'
+// import { register } from '../redux/slices/authSlice'
+import { VITE_API_URL } from '../api/movieList'
 import Steps from './Auth/Steps'
 import Or from './Auth/Or'
 import Socmed from './Auth/Socmed'
@@ -22,7 +23,7 @@ function Signup() {
   const [checkedIsVisible, setCheckedIsVisible] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const navigate = useNavigate()
-  const dispatch = useDispatch()
+  // const dispatch = useDispatch()
   
   const handleRegister = (e) => {
     e.preventDefault()
@@ -72,8 +73,25 @@ function Signup() {
       return
     }
   
-    dispatch(register({email, pass}))
-    setIsModalOpen(true)
+    fetch(`${VITE_API_URL}/users/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password: pass })
+    })
+    .then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.msg || 'Failed to register')
+      }
+      setIsModalOpen(true)
+    })
+    .catch((err) => {
+      console.error(err)
+      alert(err.message)
+    })
+
   }
 
   const showPassword = () => {

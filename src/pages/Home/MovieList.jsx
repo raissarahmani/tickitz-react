@@ -13,9 +13,9 @@ const navigate = useNavigate()
 useEffect(() => {
     async function fetchMovie() {
         try {     
-            const movies = await movieList();
-            if (!movies) throw new Error ("Data is missing")
-            setMovies(movies.data);
+            const movieLists = await movieList();
+            if (!movieLists) throw new Error ("Data is missing")
+            setMovies(movieLists.data);
         }
         catch (error) {
             console.error(error.message)
@@ -59,7 +59,7 @@ useEffect(() => {
                         ))}
                     </div>
                     <div className="detail-hover h-[265px]">
-                        <div onClick={() => navigate(`/now-playing/movie/${movie.id}`)} className='text-[#fff] py-[1vh] my-[0.5vh] text-center w-full border border-solid border-[#fff] rounded-md cursor-pointer'>Details</div>
+                        <div onClick={() => navigate(`/movies/${movie.id}`)} className='text-[#fff] py-[1vh] my-[0.5vh] text-center w-full border border-solid border-[#fff] rounded-md cursor-pointer'>Details</div>
                         <div className='text-[#fff] bg-[#1D4ED8] py-[1vh] my-[0.5vh] text-center w-full border border-solid border-[#1D4ED8] rounded-md cursor-pointer'>Buy Ticket</div>
                     </div>
                 </div>

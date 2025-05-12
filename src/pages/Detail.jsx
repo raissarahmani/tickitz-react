@@ -6,7 +6,6 @@ import Summary from './Detail/Summary'
 import Book from './Detail/Book'
 
 function Detail() {
-
   const {id} = useParams()
   const [movie, setMovie] = useState(null)
   const [showBook, setShowBook] = useState(false)
@@ -31,10 +30,7 @@ function Detail() {
             <p className='text-[#A0A3BD]'>{movie.synopsis}</p>
         </section>
     </div>
-    <div className='flex justify-center mx-[10vw] my-[5vh] z-10'><button onClick={() => {
-      console.log("Book component show") 
-      setShowBook(true)
-    }} className='custom-button bg-[#1D4ED8] mt-[3.5vh] py-[2vh] px-[2vw] rounded-sm text-[#fff] w-full'>Book Now</button></div>
+    <div className='flex justify-center mx-[10vw] my-[5vh] z-10'><button onClick={() => {setShowBook(true)}} className='custom-button bg-[#1D4ED8] mt-[3.5vh] py-[2vh] px-[2vw] rounded-sm text-[#fff] w-full'>Book Now</button></div>
     {showBook && <Book movie={movie} />}
     </>
   )

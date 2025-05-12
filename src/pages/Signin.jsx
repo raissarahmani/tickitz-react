@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
+import { VITE_API_URL } from "../api/movieList";
 
 import { login } from "../redux/slices/authSlice";
 import Or from './Auth/Or'
@@ -65,7 +66,29 @@ const loginValid = (e) => {
     setPassIsVisible(false)
   }
 
-  dispatch(login({email, pass}))
+  fetch(`${VITE_API_URL}/users/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, password: pass })
+  })
+  .then(async (res) => {
+    const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data.msg || 'Failed to login')
+    }
+
+    const token = data.token
+    dispatch(login({
+      token,
+      user: { email }
+    }))
+  })
+  .catch((err) => {
+    console.error(err)
+    alert(err.message)
+  })
 }
 
 useEffect (() => {
