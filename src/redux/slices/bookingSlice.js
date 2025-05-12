@@ -1,12 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
+    movieId: null,
     poster: "",
     title: "",
     genres: [],
+    scheduleId: null,
     date: "",
     time: "",
+    cityId: null,
     location: "",
+    cinemaId: null,
     cinema: "",
     seats: [],
     total: 0,
@@ -17,18 +21,22 @@ const bookingSlice = createSlice({
     initialState,
     reducers: {
         storeMovieDetails: (state, action) => {
-            const {poster, title, genres} = action.payload
+            const {movieId, poster, title, genres} = action.payload
 
+            state.movieId = movieId
             state.poster = poster
             state.title = title
             state.genres = genres
         },
         storeBookDetails: (state, action) => {
-            const {date, time, location, cinema} = action.payload
+            const {scheduleId, date, time, cityId, location, cinemaId, cinema} = action.payload
 
+            state.scheduleId = scheduleId
             state.date = date
             state.time = time
+            state.cityId - cityId
             state.location = location
+            state.cinemaId = cinemaId
             state.cinema = cinema
         },
         storeSeatsDetails: (state, action) => {
