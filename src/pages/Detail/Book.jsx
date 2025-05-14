@@ -14,9 +14,12 @@ function Book({movie}) {
     const [showCinemaForm, setShowCinemaForm] = useState(false)
 
     const [formData, setFormData] = useState({
+        scheduleId: null,
         date: "",
         time: "",
+        cityId: null,
         location: "",
+        cinemaId: null,
         cinema: "",
     })
     
@@ -31,7 +34,7 @@ function Book({movie}) {
         if(!formData.date) newError.date = "Data should be filled"
         if(!formData.time) newError.time = "Data should be filled"
         if(!formData.location) newError.location = "Data should be filled"
-        if(!formData.cinema) newError.cinema = "Data should be filled"
+        if(!formData.cinemaId) newError.cinema = "Data should be filled"
 
         setError(newError)
         setIsFormValid(Object.keys(newError).length === 0)
@@ -61,8 +64,8 @@ function Book({movie}) {
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-      }));
-    };
+      }))
+    }
       
 
     const filterSchedule = async () => {     
@@ -77,15 +80,17 @@ function Book({movie}) {
     
           const cinemas = input?.data?.cinemas
           setAvailableCinemas(input.data.cinemas);
+          console.log(cinemas)
 
           if (Array.isArray(cinemas)) {
-            setAvailableCinemas(cinemas.map(c => c.id))
+            setAvailableCinemas(cinemas)
+          
             const cinemasMap = cinemas.reduce((acc, cinema) => {
               acc[cinema.id] = cinema.schedule_id
               return acc;
             }, {});
             setScheduleMap(cinemasMap);
-          } 
+          }
 
         } catch (err) {
           console.error("Failed to fetch cinemas", err)
@@ -100,9 +105,29 @@ function Book({movie}) {
         setIsSubmitted(true);
     
         if (isFormValid) {
-            const selectedScheduleId = scheduleMap[formData.cinema];
-            dispatch(storeBookDetails({ ...formData, schedule_id: selectedScheduleId }));
-            navigate(`/showing/seat?movie_id=${movie_id}&city_id=${formData.location}&cinema_id=${formData.cinema}&schedule_id=${formData.time}`);
+            const selectedScheduleId = scheduleMap[formData.cinema]
+            const formatTime = (datetime) => {
+              const date = new Date(datetime);
+              const hours = String(date.getUTCHours()).padStart(2, '0');
+              const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+              return `${hours}:${minutes}`;
+            }
+            const selectedCity = location.find(c => String(c.id) === formData.location);
+            const selectedSchedule = schedule.find(s => String(s.id) === formData.time);
+            const selectedCinema = availableCinemas.find(c => String(c.id) === formData.cinemaId);
+            console.log(selectedCinema)
+
+            dispatch(storeBookDetails({
+              scheduleId: selectedScheduleId,
+              date: formData.date,
+              time: formatTime(selectedSchedule?.time),
+              cityId: selectedCity?.id,
+              location: selectedCity?.name,
+              cinemaId: selectedCinema?.id,
+              cinema: selectedCinema?.cinema
+            }))
+
+            navigate(`/showing/seat`);
         }
     }
     
@@ -159,19 +184,17 @@ function Book({movie}) {
             <div ><div className='block md:flex flex-row items-center my-[5vh] md:my-0'><p className='text-xl md:text-xl md:font-semibold text-center md:text-left text-[#000] mr-[3vw]'>Choose Cinema</p></div>
             <form onSubmit={submitForm}>
                 <div className='flex justify-between items-center mt-[1vh] mb-[5vh] w-full'>
-                    <div className='cinema-radio'>
-                       {availableCinemas.map((cinema, index) => {
-                        console.log("cinema item:", cinema)
-                       return (
-                          <div className='cinema-radio' key={index}>
-                             <input onChange={formHandler} className='hidden peer' type="radio" name="cinema" id={`cinema-${cinema}`} value={cinema} checked={formData.cinema === cinema} />
-                             <label className='label-radio peer-checked:bg-[#1D4ED8]' htmlFor={`cinema-${cinema}`}>
-                                <img className='w-[12vw] h-[5vh] object-contain' src={`/${cinema}.svg`} alt={cinema} />
-                             </label>
-                          </div> 
-                       )})}
-                    </div>
-                </div>
+                    {availableCinemas.map((cinema, index) => {
+                      return (
+                        <div className='cinema-radio' key={index}>
+                          <input onChange={formHandler} className='hidden peer' type="radio" name="cinemaId" id={`cinema-${cinema.id}`} value={cinema.id} checked={formData.cinemaId == String(cinema.id)}/>
+                          <label className='label-radio peer-checked:bg-[#1D4ED8]' htmlFor={`cinema-${cinema.id}`}>
+                            <img className='w-[12vw] h-[5vh] object-contain' src={`/${cinema.cinema}.svg`} alt={cinema.cinema}/>
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
                 {isSubmitted && error.cinema && <p className='validation-msg'>{error.cinema}</p>}
                 <div className='flex justify-center my-[5vh]'><button type="submit" className='custom-button bg-[#1D4ED8] mt-[3.5vh] py-[2vh] px-[2vw] rounded-sm text-[#fff] w-full'>Choose Seat</button></div>
             </form> 
