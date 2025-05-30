@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { movieList, VITE_API_URL } from '../../api/movieList'
+import { movieList, filterTitle, VITE_API_URL } from '../../api/movieList'
 
 import Search from '../../assets/Search.png'
 import ArrowBlue from '../../assets/right-blue.png'
@@ -8,14 +8,16 @@ import ArrowWhite from '../../assets/right-white.png'
 
 function MovieList() {
 const [movies, setMovies] = useState([])
+const [title, setTitle] = useState("")
 const navigate = useNavigate()
 
 useEffect(() => {
     async function fetchMovie() {
         try {     
             const movieLists = await movieList();
+            console.log("movie list:", movieLists.data)
             if (!movieLists) throw new Error ("Data is missing")
-            setMovies(movieLists.data);
+            setMovies(movieLists.data)
         }
         catch (error) {
             console.error(error.message)
@@ -24,7 +26,21 @@ useEffect(() => {
     }
 
     fetchMovie();
-  }, []);
+  }, [])
+
+useEffect(() => {
+  async function filterMovie() {
+    const movieLists = await filterTitle(title);
+    if (!movieLists || !Array.isArray(movieLists.data)) {
+      console.error("Data is missing or not an array");
+      return;
+    }
+    setMovies(movieLists.data);
+  }
+
+  filterMovie();
+}, [title])
+  
 
   return (
     <section className='py-[4vh] px-[10vw]'>
@@ -34,7 +50,7 @@ useEffect(() => {
                 <label for="query" hidden></label>
                 <div className='border-input flex flex-row'>
                     <img className='object-contain' src={Search} alt="Search" />
-                    <input className='border-none outline-none py-[2vh] px-[1vw] w-full' type="text" name="query" placeholder="New Born Expert" />
+                    <input onChange={(e) => setTitle(e.target.value)} className='border-none outline-none py-[2vh] px-[1vw] w-full' type="text" name="query" placeholder="New Born Expert" />
                 </div>
             </div>
             <div className='mt-[1vh] ml-[1vw]'>

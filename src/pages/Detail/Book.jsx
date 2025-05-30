@@ -84,12 +84,15 @@ function Book({movie}) {
 
           if (Array.isArray(cinemas)) {
             setAvailableCinemas(cinemas)
+            console.log("cinemas", cinemas)
+
           
             const cinemasMap = cinemas.reduce((acc, cinema) => {
-              acc[cinema.id] = cinema.schedule_id
+              acc[String(cinema.id)] = cinema.scheduleID
               return acc;
             }, {});
             setScheduleMap(cinemasMap);
+            console.log("Built scheduleMap:", cinemasMap);
           }
 
         } catch (err) {
@@ -105,7 +108,8 @@ function Book({movie}) {
         setIsSubmitted(true);
     
         if (isFormValid) {
-            const selectedScheduleId = scheduleMap[formData.cinema]
+            const selectedScheduleId = scheduleMap[formData.cinemaId];
+            console.log("scheduleMap", scheduleMap);
             const formatTime = (datetime) => {
               const date = new Date(datetime);
               const hours = String(date.getUTCHours()).padStart(2, '0');
@@ -117,12 +121,15 @@ function Book({movie}) {
             const selectedCinema = availableCinemas.find(c => String(c.id) === formData.cinemaId);
             console.log(selectedCinema)
 
+            console.log(storeBookDetails)
             dispatch(storeBookDetails({
-              scheduleId: selectedScheduleId,
-              date: formData.date,
-              time: formatTime(selectedSchedule?.time),
+              schedule: {
+                id: selectedScheduleId,
+                date: formData.date,
+                time: formatTime(selectedSchedule?.time),
+              },
               cityId: selectedCity?.id,
-              location: selectedCity?.name,
+              location: selectedCity?.name,   
               cinemaId: selectedCinema?.id,
               cinema: selectedCinema?.cinema
             }))

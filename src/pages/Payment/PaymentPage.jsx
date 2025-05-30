@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import useLocalStorage from '../../hook/useLocalStorage'
+import { VITE_API_URL } from '../../api/movieList';
 
 import Googlepay from '../../assets/google-pay.png'
 import Visa from "../../assets/visa.png";
@@ -13,18 +14,59 @@ import Bri from '../../assets/bri.png'
 import Ovo from '../../assets/ovo.png'
 
 function PaymentPage() {
-    const movieTitle = useSelector((state) => state.book?.title)
-    const bookDate = useSelector((state) => state.book?.date)
-    const bookTime = useSelector((state) => state.book?.time)
-    const bookCinema = useSelector((state) => state.book?.cinema)
-    const seats = useSelector((state) => state.book?.seats)
-    const total = useSelector((state) => state.book?.total)
+    const token = useSelector((state) => state.user?.token)
+    const book = useSelector((state) => state.book)
+    const movieID = book?.movieId
+    const movieTitle = book?.title
+    const scheduleID = book?.scheduleId
+    const bookDate = book?.date
+    const bookTime = book?.time
+    const cinemaID = book?.cinemaId
+    const bookCinema = book?.cinema
+    const cityID = book?.cityId
+    const seatids = book?.seats.map(seat => seat.seat_id)
+    const total = book?.total
+    console.log("book detail", book)
+
+    const handleConfirmPayment = async () => {
+        try {
+          const res = await fetch(`${VITE_API_URL}/order`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+              movie_id: movieID,
+              city_id: cityID,
+              cinema_id: cinemaID,
+              schedule_id: scheduleID,
+              fullname: formPayment.name,
+              email: formPayment.email,
+              phone: formPayment.phone,
+              seat_ids: seatids.map((seat) => parseInt(seat)),
+              payment_method_id: formPayment.payment
+            })
+          })
+      
+          const json = await res.json();
+          if (res.ok) {
+            navigate("/success");
+          } else {
+            alert(json.msg || "Failed to complete order.")
+            console.log("Response JSON:", json);
+          }
+        } catch {
+          alert("Server error. Please try again.");
+        }
+      }
+    
     
     const [formPayment, setFormPayment] = useLocalStorage("paymentDetails", {
         name: "",
         email: "",
         phone: "",
-        payment: "",
+        payment: null,
     })
     const [error, setError] = useState({})
     const [isFormValid, setIsFormValid] = useState(false)
@@ -33,7 +75,10 @@ function PaymentPage() {
     const navigate = useNavigate()
 
     const formHandler = (e) => {
-        setFormPayment({...formPayment,[e.target.name] : e.target.value})
+      setFormPayment(prev => ({
+        ...prev,
+        payment: parseInt(e.target.value, 10)
+      }))
     }
 
     useEffect(() => {
@@ -57,6 +102,17 @@ function PaymentPage() {
         setIsFormValid(Object.keys(newError).length === 0)
     }, [formPayment])
 
+    const paymentOptions = [
+      { id: 1, label: "Google Pay", image: Googlepay },
+      { id: 2, label: "Visa", image: Visa },
+      { id: 3, label: "Gopay", image: Gopay },
+      { id: 4, label: "Paypal", image: Paypal },
+      { id: 5, label: "Dana", image: Dana },
+      { id: 6, label: "BCA", image: Bca },
+      { id: 7, label: "BRI", image: Bri },
+      { id: 8, label: "Ovo", image: Ovo }
+    ]
+
     const submitForm = (e) => {
         e.preventDefault()
         setIsSubmitted(true)
@@ -67,7 +123,7 @@ function PaymentPage() {
     }
 
     const nextPage = () => {
-        navigate("/now-playing/success")
+        navigate("/success")
     }
 
   return (
@@ -82,18 +138,18 @@ function PaymentPage() {
                 <label for="title">MOVIE TITLE</label> <br/>
                 <input className='form-input pl-0 border-none border-[#E6E6E6]' type="text" name="title" value={movieTitle} readOnly/> <br/><br/>
                 <label for="cinema">CINEMA NAME</label> <br/>
-                <input className='form-input pl-0 border-none border-[#E6E6E6]' type="text" name="cinema" value={bookCinema} readOnly/> <br/><br/>
+                <input className='form-input pl-0 border-none border-[#E6E6E6]' type="text" name="cinema" value={bookCinema.toUpperCase()} readOnly/> <br/><br/>
                 <label for="qty">NUMBER OF TICKETS</label> <br/>
-                <input className='form-input pl-0 border-none border-[#E6E6E6]' type="text" name="qty" value={`${seats.length} pieces`} readOnly/> <br/><br/>
+                <input className='form-input pl-0 border-none border-[#E6E6E6]' type="text" name="qty" value={`${seatids.length} pieces`} readOnly/> <br/><br/>
                 <label for="total">TOTAL PAYMENT</label> <br/>
-                <input className='form-input pl-0 border-none border-[#E6E6E6] text-[#1D4ED8] font-bold' type="text" name="total" value={`$${total}`} readOnly/> <br/><br/>
+                <input className='form-input pl-0 border-none border-[#E6E6E6] text-[#1D4ED8] font-bold' type="text" name="total" value={`Rp${total}`} readOnly/> <br/><br/>
             </form>
         </div>
         <div>
             <p className='font-semibold text-xl md:text-2xl text-[#14142B]'>Personal Information</p>
             <form onSubmit={submitForm} className='my-[5vh] text-sm text-[#8692A6]'>
                 <label for="name">Full Name</label> <br/>
-                <input onChange={formHandler} className='form-input border-[#E6E6E6]' type="text" name="name" value={formPayment.name} placeholder="Jonas El Rodriguez"/> <br/>
+                <input onChange={formHandler} className='form-input border-[#E6E6E6]' type="text" name ="name" value={formPayment.name} placeholder="Jonas El Rodriguez"/> <br/>
                 {isSubmitted && error.name && <p className='validation-msg'>{error.name}</p>}
                 <label for="email">Email</label> <br/>
                 <input onChange={formHandler} className='form-input border-[#E6E6E6]' type="email" name="email" value={formPayment.email} placeholder="jonasrodri123@gmail.com"/> <br/>
@@ -110,57 +166,25 @@ function PaymentPage() {
             <p className='font-semibold text-xl md:text-2xl text-[#14142B]'>Payment Method</p>
             <form onSubmit={submitForm}>
                 <div className='grid grid-cols-2 md:grid-cols-4 grid-rows-4 md:grid-rows-2 mt-[5vh] gap-[1vw]'>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="gpay" value="gpay" checked={formPayment.payment === "gpay"} />
-                        <label className='label-radio' for="gpay">
-                            <img src={Googlepay} alt="Google Pay"/>
-                        </label>
+                  {paymentOptions.map(({ id, label, image }) => (
+                    <div className='cinema-radio' key={id}>
+                      <input
+                        onChange={formHandler}
+                        className='hidden peer'
+                        type='radio'
+                        name='payment'
+                        id={`payment-${id}`}
+                        value={id}
+                        checked={formPayment.payment === id}
+                      />
+                      <label className='label-radio' htmlFor={`payment-${id}`}>
+                        <img src={image} alt={label} />
+                      </label>
                     </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="visa" value="visa" checked={formPayment.payment === "visa"} />
-                        <label className='label-radio' for="visa">
-                            <img src={Visa} alt="Visa"/>
-                        </label>
-                    </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="gopay" value="gopay" checked={formPayment.payment === "gopay"} />
-                        <label className='label-radio' for="gopay">
-                            <img src={Gopay} alt="Gopay"/>
-                        </label>
-                    </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="paypal" value="paypal" checked={formPayment.payment === "paypal"} />
-                        <label className='label-radio' for="paypal">
-                            <img src={Paypal} alt="Paypal"/>
-                        </label>
-                    </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="dana" value="dana" checked={formPayment.payment === "dana"} />
-                        <label className='label-radio' for="dana">
-                            <img src={Dana} alt="Dana"/>
-                        </label>
-                    </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="bca" value="bca" checked={formPayment.payment === "bca"} />
-                        <label className='label-radio' for="bca">
-                            <img src={Bca} alt="BCA"/>
-                        </label>
-                    </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="bri" value="bri" checked={formPayment.payment === "bri"} />
-                        <label className='label-radio' for="bri">
-                            <img src={Bri} alt="BRI"/>
-                        </label>
-                    </div>
-                    <div className='cinema-radio'>
-                        <input onChange={formHandler} className='hidden peer' type="radio" name="payment" id="ovo" value="ovo" checked={formPayment.payment === "ovo"} />
-                        <label className='label-radio' for="ovo">
-                            <img src={Ovo} alt="Ovo"/>
-                        </label>
-                    </div>
+                  ))}
                 </div>
                 {isSubmitted && error.payment && <p className='validation-msg'>{error.payment}</p>}
-                <button className='custom-button bg-[#1D4ED8] text-sm text-[#fff] w-full py-[2vh] my-[5vh]'>Pay your order</button>
+                <button onClick={handleConfirmPayment} className='custom-button bg-[#1D4ED8] text-sm text-[#fff] w-full py-[2vh] my-[5vh]'>Pay your order</button>
             </form>
         </div>
     </section>
@@ -177,7 +201,7 @@ function PaymentPage() {
             </div>
             <div className='flex flex-col md:flex-row items-start md:items-center justify-between my-[7vh]'>
                 <p className='text-[#8692A6] text-sm'>Total Payment :</p>
-                <p className='font-bold text-lg text-[#1D4ED8] text-right'>{`$${total}`}</p>
+                <p className='font-bold text-lg text-[#1D4ED8] text-right'>{`Rp${total}`}</p>
             </div>
             <p className='text-sm md:text-basis text-[#A0A3BD]'>Pay this payment bill before it is due, <span className='text-[D00707]'>on June 23, 2023.</span> If the bill has not been paid by the specified time, it will be forfeited</p>
             <div className='flex flex-col items-center justify-between my-[7vh] gap-[1vh]'>

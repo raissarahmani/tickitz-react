@@ -9,6 +9,7 @@ function Summary() {
     const [movie, setMovie] = useState(null)
     const dispatch = useDispatch()
     const [movieDetails, setMovieDetails] = useState({
+      movieId: null,
       poster: null,
       title: null,
       genres: null,
@@ -22,6 +23,7 @@ function Summary() {
             setMovie(movieData.data);
 
             const fetchedMovie = {
+              movieId: movieData.data.id,
               poster: `${VITE_API_URL}/public/${movieData.data.poster}`,
               title: movieData.data.title,
               genres: movieData.data.genre

@@ -1,63 +1,162 @@
 import { useNavigate } from 'react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { storeSeatsDetails } from '../../redux/slices/bookingSlice'
+import { VITE_API_URL } from '../../api/movieList'
 
 import Down from '../../assets/Arrow-black.png'
 import Right from '../../assets/right-black.png'
 
 function Seats() {
-    const [seatData, setSeatData] = useState({
-        seats: [],
-        total: 0,
-    })
+    const book = useSelector((state) => state.book)
+    const movieID = book?.movieId
+    const moviePoster = book?.poster
+    const movieTitle = book?.title
+    const movieGenres = book?.genres
+    const scheduleID = book?.scheduleId
+    const bookDate = book?.date
+    const bookTime = book?.time
+    const cinemaID = book?.cinemaId
+    const bookCinema = book?.cinema
+    const cityID = book?.cityId
+    console.log("book detail", book)
 
     const [isModalOpen, setIsModalOpen] = useState(false)
-
-    const moviePoster = useSelector((state) => state.book?.poster)
-    const movieTitle = useSelector((state) => state.book?.title)
-    const movieGenres = useSelector((state) => state.book?.genres)
-    const bookDate = useSelector((state) => state.book?.date)
-    const bookTime = useSelector((state) => state.book?.time)
-    const bookCinema = useSelector((state) => state.book?.cinema)
-    const seats = useSelector((state) => state.book?.seats)
-    const total = useSelector((state) => state.book?.total)
-
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
-    const seatHandler = (seatId) => {
-        setSeatData((prevData) => {
-            const checkSeats = (prevData.seats || []).includes(seatId) 
-            ? (prevData.seats || []).filter((seat) => seat !== seatId)
-            : [...(prevData.seats || []), seatId]
-
-            return {
-                ...prevData,
-                seats: [...checkSeats],
-                total: checkSeats.length * 10
-            }
-        })
-    }
-    
-    useEffect(() => {
-        dispatch(storeSeatsDetails(seatData))
-    }, [seatData, dispatch])
+    const [seats, setSeats] = useState([])
+    const [selectedSeats, setSelectedSeats] = useState([])
+    const [error, setError] = useState("")
 
     const rows = ["A", "B", "C", "D", "E", "F", "G"]
     const colsLeft = [1,2,3,4,5,6,7]
     const colsRight = [8,9,10,11,12,13,14]
 
+    const fetchSeats = async () => {
+        try {
+            const res = await fetch(`${VITE_API_URL}/showing/seat?movie_id=${movieID}&cinema_id=${cinemaID}&city_id=${cityID}&schedule_id=${scheduleID}`, {
+                cache: 'no-store'
+            })
+            const json = await res.json();
+
+            if (res.ok) {
+              setSeats(json.data)
+              const booked = json.data
+                .filter(seat => seat.is_available === false)
+                .map(seat => seat.seat);
+
+                setSeatData(prev => ({
+                    ...prev,
+                    bookedSeats: booked
+                }))
+            } else {
+              setError(json.msg || "Failed to fetch seat data.");
+            }
+          } catch {
+            setError("Server error.");
+          }
+        }
+
+    useEffect(() => {
+        if (!movieID || !cityID || !cinemaID || !scheduleID) {
+          console.log("Fetching with", { movieID, cinemaID, cityID, scheduleID })
+          setError("Missing booking information.")
+          return
+        }
+
+        fetchSeats();
+    }, [movieID, cityID, cinemaID, scheduleID])
+
+    const seatMap = useMemo(() => {
+        const map = {};
+        for (const seat of seats) {
+          map[seat.seat] = {
+            id: seat.id,
+            is_available: seat.is_available,
+          };
+        }
+        return map;
+      }, [seats]);
+
+    const seatHandler = (seatString, seatDbId) => {
+        setSelectedSeats((prev) => {
+        if (prev.includes(seatString)) {
+            return prev.filter((seat) => seat !== seatString);
+        } else {
+            return [...prev, seatString];
+        }
+    })
+
+    setSeatData((prev) => {
+        const isAlreadySelected = prev.seats.some((seat) => seat.seat === seatString);
+        return {
+          ...prev,
+          seats: isAlreadySelected
+            ? prev.seats.filter((seat) => seat.seat !== seatString)
+            : [...prev.seats, { seat: seatString, seat_id: seatDbId }],
+        }
+    })}
+
+    const renderSeatGrid = (cols) =>
+        rows.map((row) =>
+          cols.map((col) => {
+            const seatId = `${row}${col}`;
+            const seatData = seatMap[seatId];
+            const isSelected = selectedSeats.includes(seatId);
+            const isAvailable = seatData?.is_available ?? false;
+    
+            return (
+                <div
+                  key={seatId}
+                  onClick={() => isAvailable && seatHandler(seatId, seatData?.id)}
+                  className={`seats cursor-pointer ${
+                    !isAvailable
+                      ? "bg-[#4E4B66] cursor-not-allowed"
+                      : isSelected
+                      ? "bg-[#1D4ED8]"
+                      : "bg-[#D6D8E7]"
+                  }`}
+                />
+            )
+          })
+        )
+    
     const changeMovie = () => {
-        navigate("/now-playing")
+        navigate("/movies")
     }
 
+    const [seatData, setSeatData] = useState({
+        seats: [],
+        price: 35000,
+        total: 0,
+        bookedSeats: []
+    })
+
+    useEffect(() => {
+      setSeatData((prev) => ({
+        ...prev,
+        total: prev.seats.length * prev.price
+      }))
+       console.log("Dispatched seats data", {
+          seats: seatData.seats,
+          price: seatData.price,
+          total: seatData.total
+        });
+    }, [seatData.seats])
+
     const buttonClicked = () => {
-        setIsModalOpen(true)
+        if (seatData.seats.length === 0) return alert("Please select at least one seat")
+        setIsModalOpen(true);
     }
 
     const nextPage = () => {
-        navigate("/now-playing/payment")
+        dispatch(storeSeatsDetails({
+          seats: seatData.seats,
+          price: seatData.price,
+          total: seatData.seats.length * seatData.price
+        }))
+        navigate("/payment")
     }
 
   return (
@@ -88,53 +187,28 @@ function Seats() {
                                 <div key={row} className='seats bg-transparent my-[2vh]'>{row}</div>
                             ))}
                         </div>
-                        <div className='flex flex-row justify-between w-full md:w-2/3'>
-                            <div 
-                            className='grid mt-[5vh] border-b border-[red] md:border-none'
-                            style={{gridTemplateColumns: `repeat(${colsLeft.length}, 1fr)`}}
-                            >
-                                {rows.map((row) => (
-                                    colsLeft.map((col) => {
-                                        const seatId = `${row}${col}`;
-                                        const isSelected = (seatData.seats || []).includes(seatId);
-                                    
-                                        return (
-                                            <div 
-                                                onClick={() => seatHandler(seatId)} 
-                                                key={seatId} 
-                                                className={`seats ${isSelected ? "bg-[#1D4ED8]" : "bg-[#D6D8E7]"}`}>
-                                            </div>
-                                        )
-                                    })
-                                ))}
+                        <div className="flex flex-row justify-between w-full md:w-2/3">
+                          {error && <p className="text-red-500">{error}</p>}
 
-                                {colsLeft.map((col) => (
-                                    <div key={col} className='hidden md:block seats bg-transparent text-center'>{col}</div>
-                                ))}
-                            </div>
-                            <div 
-                            className='grid mt-[5vh] border-b border-[red] md:border-none'
-                            style={{gridTemplateColumns: `repeat(${colsRight.length}, 1fr)`}}
-                            >
-                                {rows.map((row) => (
-                                    colsRight.map((col) => {
-                                        const seatId = `${row}${col}`;
-                                        const isSelected = (seatData.seats || []).includes(seatId);
-                                    
-                                        return (
-                                            <div 
-                                                onClick={() => seatHandler(seatId)} 
-                                                key={seatId} 
-                                                className={`seats ${isSelected ? "bg-[#1D4ED8]" : "bg-[#D6D8E7]"}`}>
-                                            </div>
-                                        );
-                                    })
-                                ))}
-
-                                {colsRight.map((col) => (
-                                    <div key={col} className='hidden md:block seats bg-transparent text-center'>{col}</div>
-                                ))}
-                            </div>
+                          {/* LEFT BLOCK */}
+                          <div  className="grid mt-[5vh] border-b border-[red] md:border-none" style={{ gridTemplateColumns: `repeat(${colsLeft.length}, 1fr)` }}>
+                            {renderSeatGrid(colsLeft)}
+                            {colsLeft.map((col) => (
+                              <div key={col} className="hidden md:block seats bg-transparent text-center">
+                                {col}
+                              </div>
+                            ))}
+                          </div>
+                        
+                          {/* RIGHT BLOCK */}
+                          <div className="grid mt-[5vh] border-b border-[red] md:border-none" style={{ gridTemplateColumns: `repeat(${colsRight.length}, 1fr)` }}>
+                            {renderSeatGrid(colsRight)}
+                            {colsRight.map((col) => (
+                              <div key={col} className="hidden md:block seats bg-transparent text-center">
+                                {col}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                     </div>
                 </div>
@@ -199,22 +273,29 @@ function Seats() {
                   </div>
                   <div className='flex flex-row justify-between mb-[3vh]'>
                       <div className='text-xs text-[#6B6B6B]'>One ticket price</div>
-                      <div className='font-semibold text-xs text-center text-[#14142B]'>$10</div>
+                      <div className='font-semibold text-xs text-center text-[#14142B]'>Rp {seatData.price}</div>
                   </div>
                   <div className='flex flex-row justify-between mb-[3vh]'>
                       <div className='text-xs text-[#6B6B6B]'>Seat choosed</div>
-                      <div className='font-semibold text-xs text-right text-[#14142B]'>{[...(seats || [])]
-                      .sort((left,right) => {
-                        const [rowLeft, colLeft] = [left[0], parseInt(left.slice((1),10))]
-                        const [rowRight, colRight] = [right[0], parseInt(right.slice((1), 10))]
-                        return rowLeft > rowRight ? 1 : (rowLeft < rowRight ? -1 : (colLeft > colRight ? 1 : (colLeft < colRight ? -1 : 0)))
-                      })
-                      .join(", ") || "No seat selected"}</div>
+                      <div className='font-semibold text-xs text-right text-[#14142B]'>
+                        {[...(seatData.seats || [])]
+                          .map((s) => s.seat)
+                          .sort((left, right) => {
+                            const [rowLeft, colLeft] = [left[0], parseInt(left.slice(1), 10)];
+                            const [rowRight, colRight] = [right[0], parseInt(right.slice(1), 10)];
+                            return rowLeft > rowRight
+                              ? 1
+                              : rowLeft < rowRight
+                              ? -1
+                              : colLeft - colRight;
+                          })
+                          .join(", ") || "No seat selected"}
+                    </div>
                   </div>
               </div>
               <div className='flex flex-row justify-between items-center py-[2vh] px-[2vw] border-t border-solid border-[#E6E6E6]'>
                   <div>Total Payment</div>
-                  <div className='font-semibold text-[#1D4ED8] text-right'>${total}</div>
+                  <div className='font-semibold text-[#1D4ED8] text-right'>Rp {seatData.total.toLocaleString()}</div>
               </div>
               <button onClick={nextPage} disabled={seatData.seats.length === 0} className='custom-button my-[6vh] mx-[2vw] py-[2vh] w-4/5 text-[#fff] text-sm bg-[#1D4ED8]'>Checkout now</button>
           </section>
@@ -245,22 +326,29 @@ function Seats() {
                     </div>
                     <div className='flex flex-row justify-between mb-[3vh]'>
                         <div className='text-xs text-[#6B6B6B]'>One ticket price</div>
-                        <div className='font-semibold text-xs text-center text-[#14142B]'>$10</div>
+                        <div className='font-semibold text-xs text-center text-[#14142B]'>Rp {seatData.price}</div>
                     </div>
                     <div className='flex flex-row justify-between mb-[3vh]'>
                         <div className='text-xs text-[#6B6B6B]'>Seat choosed</div>
-                        <div className='font-semibold text-xs text-right text-[#14142B]'>{[...(seats || [])]
-                        .sort((left,right) => {
-                          const [rowLeft, colLeft] = [left[0], parseInt(left.slice((1),10))]
-                          const [rowRight, colRight] = [right[0], parseInt(right.slice((1), 10))]
-                          return rowLeft > rowRight ? 1 : (rowLeft < rowRight ? -1 : (colLeft > colRight ? 1 : (colLeft < colRight ? -1 : 0)))
-                        })
-                        .join(", ") || "No seat selected"}</div>
+                        <div className='font-semibold text-xs text-right text-[#14142B]'>                        
+                        {[...(seatData.seats || [])]
+                          .map((s) => s.seat)
+                          .sort((left, right) => {
+                            const [rowLeft, colLeft] = [left[0], parseInt(left.slice(1), 10)];
+                            const [rowRight, colRight] = [right[0], parseInt(right.slice(1), 10)];
+                            return rowLeft > rowRight
+                              ? 1
+                              : rowLeft < rowRight
+                              ? -1
+                              : colLeft - colRight;
+                          })
+                          .join(", ") || "No seat selected"}
+                        </div>
                     </div>
                 </div>
                 <div className='flex flex-row justify-between items-center py-[2vh] px-[2vw] border-t border-solid border-[#E6E6E6]'>
                     <div>Total Payment</div>
-                    <div className='font-semibold text-[#1D4ED8] text-right'>${total}</div>
+                    <div className='font-semibold text-[#1D4ED8] text-right'>Rp {seatData.total.toLocaleString()}</div>
                 </div>
                 <button onClick={nextPage} disabled={seatData.seats.length === 0} className='custom-button my-[6vh] mx-[2vw] py-[2vh] w-9/10 text-[#fff] text-sm bg-[#1D4ED8]'>Checkout now</button>
             </section>

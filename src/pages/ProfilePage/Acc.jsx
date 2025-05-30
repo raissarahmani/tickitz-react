@@ -66,6 +66,16 @@ function Acc() {
         setError(validateDetails)
     }, [formProfile])
 
+    useEffect(() => {
+        const url = "http://localhost:8080/movies"
+        fetch(url, {
+            method: "GET",
+          })
+            .then((res) => res.json())
+            .then((data) => console.log(data))
+            .catch((err) => console.error("CORS error:", err));
+        }, [])
+
     const showPassword = () => {
         setShowPass((showPass) => !showPass)
       }
@@ -77,7 +87,7 @@ function Acc() {
     }
 
   return (
-    <section className='md:w-1/4 rounded-[24px] bg-[#fff] mx-[10vw] md:mx-0'>
+    <section className='md:w-1/4 rounded-[24px] bg-[#fff] mx-[10vw] md:mx-0 my-[5vh] md:my-0'>
         <div className='py-[7vh] px-[10vw] md:px-[3vw] border-b border-solid border-[#DEDEDE]'>
             <div className='flex flex-row justify-between'>
                 <p className='text-[#4E4B66]'>INFO</p>
@@ -107,7 +117,7 @@ function Acc() {
             <button onClick={buttonClicked} className='md:hidden custom-bottom bg-[#1D4ED8] rounded-xl my-[7vh] py-[1vh] w-full text-[#fff]'>Edit Profile</button>
         </div>
         {isModalOpen && (
-            <div className='md:hidden inset-0 bg-[#00000099] flex justify-center items-center z-3'>
+            <div className='block md:hidden inset-0 bg-[#00000099] flex justify-center items-center z-3'>
                 <section className='md:hidden bg-[#fff] rounded-md absolute top-1/2 left-1/2 py-[5vh] px-[5vw] md:px-[3vw] transform -translate-x-1/2 -translate-y-1/2 z-4 w-4/5'>
                     <div className='mt-[7vh] py-[7vh] px-[5vw]'>
                         <p className='font-semibold border-b border-solid border-[#DEDEDE] pb-[3vh]'>Detail Information</p>

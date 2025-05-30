@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import useLocalStorage from '../hook/useLocalStorage'
+import { VITE_API_URL } from '../api/movieList'
 
 import Show from '../assets/eye.svg'
 import check from '../assets/check.svg'
 
 function Profile() {
+    const token = useSelector(state => state.user.token)
+
     const [formProfile, setFormProfile] = useLocalStorage("userProfile", {
         firstname: "",
         lastname: "",
@@ -13,6 +17,7 @@ function Profile() {
         pass: "",
         confirmpass: "",
     })
+
     const [error, setError] = useState({})
     const [isClicked, setIsClicked] = useState(false)
     const [showPass, setShowPass] = useState(false)
@@ -63,15 +68,60 @@ function Profile() {
         setError(validateDetails)
     }, [formProfile])
 
-    const buttonClicked = (e) => {
+    useEffect(() => {
+        if (token) {
+          fetch(`${VITE_API_URL}/profile`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then(res => res.json())
+            .then(data => {
+              setFormProfile(prev => ({
+                ...prev,
+                firstname: data.firstname || "",
+                lastname: data.lastname || "",
+                email: data.email || "",
+                phone: data.phone || "",
+              }))
+            })
+            .catch(err => console.error("Failed to fetch profile", err))
+        }
+      }, [token])
+
+    const buttonClicked = async (e) => {
         e.preventDefault()
         setIsClicked(true)
         const validateDetails = validateForm(formProfile)
         setError(validateDetails)
 
         if (Object.keys(validateDetails).length === 0) {
-            localStorage.setItem("userProfile", JSON.stringify(formProfile))
-            setIsModalOpen(true)
+            try {
+                const res = await fetch(`${VITE_API_URL}/profile/edit`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    firstname: formProfile.firstname,
+                    lastname: formProfile.lastname,
+                    email: formProfile.email,
+                    phone: formProfile.phone
+                  }),
+                })
+          
+                const data = await res.json()
+          
+                if (!res.ok) {
+                  throw new Error(data.msg || 'Failed to update profile')
+                }
+          
+                setIsModalOpen(true)
+            } catch (err) {
+                console.error("Profile update failed", err)
+                alert(err.message)
+            }
         }
     }
 

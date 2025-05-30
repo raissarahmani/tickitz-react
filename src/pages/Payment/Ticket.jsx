@@ -5,11 +5,13 @@ import QR from '../../assets/qr.png'
 import Download from '../../assets/Download.png'
 
 function Ticket() {
-    const movieTitle = useSelector((state) => state.book?.title)
-    const bookDate = useSelector((state) => state.book?.date)
-    const bookTime = useSelector((state) => state.book?.time)
-    const seats = useSelector((state) => state.book?.seats)
-    const total = useSelector((state) => state.book?.total)
+    const book = useSelector((state) => state.book)
+    const movieTitle = book?.title
+    const bookDate = book?.date
+    const bookTime = book?.time
+    const seatnums = book?.seats.map(seat => seat.seat)
+    const seatids = book?.seats.map(seat => seat.seat_id)
+    const total = book?.total
 
     const navigate = useNavigate()
     const nextPage = () => {
@@ -39,15 +41,15 @@ function Ticket() {
                 </div>
                 <div>
                     <div className='font-normal text-xs text-[#AAAAAA]'>Count</div>
-                    <div className='font-normal text-sm text-[#14142B] mt-[1vh] mb-[2vh]'>{`${seats.length} pcs`}</div>
+                    <div className='font-normal text-sm text-[#14142B] mt-[1vh] mb-[2vh]'>{`${seatids.length} pcs`}</div>
                 </div>
                 <div>
                     <div className='font-normal text-xs text-[#AAAAAA]'>Seats</div>
-                    <div className='font-normal text-sm text-[#14142B] mt-[1vh] mb-[2vh]'>{seats.join(", ")}</div>
+                    <div className='font-normal text-sm text-[#14142B] mt-[1vh] mb-[2vh]'>{seatnums.join(", ")}</div>
                 </div>
                 <div className='col-span-2 flex flex-row justify-around items-center border border-solid border-[#DEDEDE] rounded-sm m-[0]'>
                     <div className='font-normal text-xs text-[#AAAAAA]'>Total</div>
-                    <div className='font-normal text-sm text-[#14142B] mt-[1vh] mb-[2vh]'>{`$ ${total}`}</div>
+                    <div className='font-normal text-sm text-[#14142B] mt-[1vh] mb-[2vh]'>{`Rp ${total}`}</div>
                 </div>
             </div>
         </div>
