@@ -13,6 +13,7 @@ const initialState = {
     cinemaId: null,
     cinema: "",
     seats: [],
+    price: 0,
     total: 0,
 }
 
@@ -29,20 +30,28 @@ const bookingSlice = createSlice({
             state.genres = genres
         },
         storeBookDetails: (state, action) => {
-            const {scheduleId, date, time, cityId, location, cinemaId, cinema} = action.payload
+            console.log(action.payload)
+            const {
+                schedule: { id, date, time }, 
+                cityId, 
+                location, 
+                cinemaId, 
+                cinema
+            } = action.payload
 
-            state.scheduleId = scheduleId
+            state.scheduleId = id
             state.date = date
             state.time = time
-            state.cityId - cityId
+            state.cityId = cityId
             state.location = location
             state.cinemaId = cinemaId
             state.cinema = cinema
         },
         storeSeatsDetails: (state, action) => {
-            const {seats, total} = action.payload
+            const {seats, price, total} = action.payload
 
             state.seats = seats
+            state.price = price
             state.total = total
         },
         resetData: () => initialState
